@@ -5,7 +5,7 @@ HEADERS = include/
 CC = gcc
 # CCFLAGS = -g -Wall -Werror -Wextra -fsanitize=address -fsanitize=undefined
 CCFLAGS = -I $(HEADERS) -g -Wall -Werror -Wextra
-SRCS = $(addprefix $(SRC_PATH), main.c memdup.c memncat.c)
+SRCS = $(addprefix $(SRC_PATH), main.c utility.c error.c memdup.c memcat.c datadump.c puts.c)
 OBJS = $(SRCS:.c=.o)
 
 all: $(OUT)

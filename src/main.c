@@ -1,64 +1,78 @@
 #include "../include/xxd.h"
 
-int		compare_str(char *s, char *t)
+char	*read_from_fd(int ifd, size_t *size)
 {
-	while (*s == *t)
-	{
-		if (*s == '\0')
-			return (0);
-		s++;
-		t++;
-	}
-	return (*s - *t);
-}
+	int		n;
+	char	buf[XXD_BUFSIZ + 1];
+	char	*data;
+	char	*old;
 
-char	*read_from_stdin(void)
-{
-	int n;
-	char buf[1024];
-	char *content;
-	char *old;
-	int size;
-
-	content = NULL;
-	size = 0;
-	while ((n = read(0, buf, 1024)) > 0)
+	data = NULL;
+	n = 0;
+	*size = 0;
+	while ((n = read(ifd, buf, XXD_BUFSIZ)) > 0)
 	{
-		printf("n: %d\n", n);
-		printf("buf: %s\n", buf);
-		if (content == NULL)
-			content = memdup(buf);
+		buf[n] = '\0';
+		if (data == NULL)
+			data = memdup(buf, n);
 		else
 		{
-			old = content;
-			content = memncat(content, buf, size + n);
+			old = data;
+			data = memcat(data, buf, *size, n);
 			free(old);
 		}
-		size += n;
+		*size += n;
 	}
-	return (content);
+	return (data);
 }
 
-int	main_for_stdin(int argc, char *argv[], int option)
+void	data_for_stdin(int option)
 {
-	char *content;
+	unsigned char	*data;
+	size_t			size;
 
-	if (option)
-		printf("option");
-	content = read_from_stdin();
-	printf("%s\n", content);
-	return (0);
+	data = (unsigned char *)read_from_fd(STDIN_FILENO, &size);
+	datadump(data, size, option);
+	free(data);
 }
 
-int main(int argc, char *argv[])
+void	data_for_files(int argc, char *argv[], int i, int option)
 {
+	char	*data;
+	int		ifd;
+	size_t	size;
+
+	if ((ifd = open(argv[i], O_RDWR, 0)) == -1)
+	{
+		printf("error opening file\n");
+		return ;
+	}
+	data = read_from_fd(ifd, &size);
+	/* printf("data: %s\n", data); */
+	close(ifd);
+	free(data);
+}
+
+int		main(int argc, char *argv[])
+{
+	int i;
+	int option;
+
+	option = (argc >= 2 && cmpstr(argv[1], "-C") == 0) ? 1 : 0;
 	if (argc == 1)
-		return (main_for_stdin(argc, argv, 0));
-	if (argc == 2 && compare_str(argv[1], "-C"))
-		return (main_for_stdin(argc, argv, 1));
+		data_for_stdin(option);
+	else if (argc == 2 && option)
+		data_for_stdin(option);
 	else
 	{
-		printf("read from file");
+		i = option ? 2: 1;
+		while (i < argc)
+		{
+			printf("data_for_files i: %d\n", i);
+			data_for_files(argc, argv, i, option);
+			i++;
+		}
 	}
 	return (0);
 }
+
