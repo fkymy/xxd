@@ -38,17 +38,17 @@ void	data_for_stdin(int option)
 
 void	data_for_files(int argc, char *argv[], int i, int option)
 {
-	char	*data;
-	int		ifd;
-	size_t	size;
+	unsigned char	*data;
+	int				ifd;
+	size_t			size;
 
 	if ((ifd = open(argv[i], O_RDWR, 0)) == -1)
 	{
-		printf("error opening file\n");
+		put_error(argv, argc, i, 0);
 		return ;
 	}
-	data = read_from_fd(ifd, &size);
-	/* printf("data: %s\n", data); */
+	data = (unsigned char *)read_from_fd(ifd, &size);
+	datadump(data, size, option);
 	close(ifd);
 	free(data);
 }
@@ -68,7 +68,6 @@ int		main(int argc, char *argv[])
 		i = option ? 2: 1;
 		while (i < argc)
 		{
-			printf("data_for_files i: %d\n", i);
 			data_for_files(argc, argv, i, option);
 			i++;
 		}
