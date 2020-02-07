@@ -8,23 +8,57 @@ void	puthex(int octet, int digits)
 	putchar_to_fd(base[octet % 16], 1);
 }
 
+void	putascii(char ascii[17], int k)
+{
+	int i;
+
+	i = 0;
+	while (i < k)
+	{
+		if (is_printable(ascii[i]))
+			putchar_to_fd(ascii[i], 1);
+		else
+			putstr_to_fd(".", 1);
+		i++;
+	}
+}
+
+void	putlastoffset(int offset, int option)
+{
+	putstr_to_fd("\n", 1);
+	puthex(offset + 1, 7 + option);
+	putstr_to_fd("\n", 1);
+}
+
 void	datadump(unsigned char *data, size_t size, int option)
 {
 	size_t	i;
-	int				dupcount = 0;
-	int				is_duprow = 0;
+	size_t	j;
+	size_t	k;
+	int		dupcount;
+	int		is_duprow;
+	char	ascii[17];
 
-	if (option)
-		putstr_to_fd("option!", 1);
-
+	dupcount = 0;
+	is_duprow = 0;
+	ascii[16] = '\0';
 	i = -1;
 	while (++i < size)
 	{
 		if (i % 16 == 0)
 		{
+			j = 0;
+			k = 0;
+			while (i + j < size && j < 16)
+			{
+				if ((int)data[i + j] == (int)data[i + j + 1])
+					dupcount++;
+				j++;
+			}
 			if (dupcount == 16 && is_duprow)
 			{
 				putstr_to_fd("*\n", 1);
+				i = i + 15;
 				continue ;
 			}
 			else if (dupcount == 16)
@@ -33,34 +67,31 @@ void	datadump(unsigned char *data, size_t size, int option)
 				is_duprow = 0;
 			dupcount = 0;
 			puthex(i, 7 + option);
-			putstr_to_fd(" ", 1);
+			putmargin(option);
 		}
-		if (i > 0 && (int)data[i] == (int)data[i - 1])
-			dupcount++;
+
+		ascii[k++] = data[i];
 		puthex((int)data[i], 2);
-		if ((i + 1) % 16 == 0)
-			putstr_to_fd("\n", 1);
-		else if ((i + 1) == size)
+
+		if ((i + 1) % 8 == 0 || (i + 1) == size)
 		{
-			putstr_to_fd("\n", 1);
-			puthex(i + 1, 7 + option);
-			putstr_to_fd("\n", 1);
+			putmargin(option);
+			if ((i + 1) % 16 == 0)
+			{
+				if (option)
+				{
+					putstr_to_fd("|", 1);
+					putascii(ascii, k);
+					putstr_to_fd("|", 1);
+				}
+				if ((i + 1) == size)
+					putlastoffset(i, option);
+				putstr_to_fd("\n", 1);
+			}
+			else if ((i + 1) == size)
+				putlastoffset(i, option);
 		}
 		else
 			putstr_to_fd(" ", 1);
 	}
-	return ;
-	/* while (data[i]) */
-	/* { */
-	/* 	printf("%02X ", data[i]); */
-	/* 	if (is_printable(data[i])) */
-	/* 		ascii[i % 16] = data[i]; */
-	/* 	else */
-	/* 		ascii[i % 16] = '.'; */
-    /*  */
-	/* 	i++; */
-	/* 	count++; */
-	/* 	if (count % 16 == 0) */
-	/* 		printf("\n"); */
-	/* } */
 }
