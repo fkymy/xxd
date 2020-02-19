@@ -12,6 +12,8 @@ void	putascii(char ascii[17], int size)
 {
 	int i;
 
+	putstr_to_fd("  ", 1);
+	putstr_to_fd("|", 1);
 	i = 0;
 	while (i < size)
 	{
@@ -21,11 +23,11 @@ void	putascii(char ascii[17], int size)
 			putstr_to_fd(".", 1);
 		i++;
 	}
+	putstr_to_fd("|", 1);
 }
 
 void	putlastoffset(int offset, int option)
 {
-	putstr_to_fd("\n", 1);
 	puthex(offset + 1, 7 + option);
 	putstr_to_fd("\n", 1);
 }
@@ -44,12 +46,11 @@ int		is_dup(unsigned char *data, size_t i, size_t size, int *dup_state)
 		j++;
 	}
 	if (count == 16 && *dup_state)
-		return (1);
+		return (*dup_state = 2);
 	else if (count == 16)
-		*dup_state = 1;
+		return (*dup_state = 1);
 	else
-		*dup_state = 0;
-	return (0);
+		return (*dup_state = 0);
 }
 
 void	datadump(unsigned char *data, size_t size, int option)
@@ -69,35 +70,46 @@ void	datadump(unsigned char *data, size_t size, int option)
 			a = 0;
 			if (is_dup(data, i, size, &dup_state))
 			{
-				putstr_to_fd("*\n", 1);
+				if (dup_state == 1)
+					putstr_to_fd("*\n", 1);
 				i = i + 16 - 1;
 				continue ;
 			}
 			puthex(i, 7 + option);
-			putmargin(option);
+			if (option)
+				putstr_to_fd(" ", 1);
 		}
 		ascii[a++] = data[i];
+		putstr_to_fd(" ", 1);
 		puthex((int)data[i], 2);
 
-		if ((i + 1) % 8 == 0 || (i + 1) == size)
+		if ((i + 1) % 16 == 0)
 		{
-			putmargin(option);
-			if ((i + 1) % 16 == 0)
-			{
-				if (option)
-				{
-					putstr_to_fd("|", 1);
-					putascii(ascii, a);
-					putstr_to_fd("|", 1);
-				}
-				if ((i + 1) == size)
-					putlastoffset(i, option);
-				putstr_to_fd("\n", 1);
-			}
-			else if ((i + 1) == size)
+			if (option)
+				putascii(ascii, a);
+			putstr_to_fd("\n", 1);
+			if ((i + 1) == size)
 				putlastoffset(i, option);
 		}
-		else
-			putstr_to_fd(" ", 1);
+		else if ((i + 1) == size)
+		{
+			int b = 0;
+			while (a + b < 16)
+			{
+				if ((a + b + 1) % 8 == 0 && option)
+					putstr_to_fd(" ", 1);
+				putstr_to_fd("   ", 1);
+				b++;
+			}
+			if (option)
+				putascii(ascii, a);
+			putstr_to_fd("\n", 1);
+			putlastoffset(i, option);
+		}
+		else if ((i + 1) % 8 == 0)
+		{
+			if (option)
+				putstr_to_fd(" ", 1);
+		}
 	}
 }
